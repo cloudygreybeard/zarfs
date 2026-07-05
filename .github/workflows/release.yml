@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      - uses: goreleaser/goreleaser-action@v7
+        with:
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-tap:
+    needs: release
+    uses: cloudygreybeard/homebrew-tap/.github/workflows/release-homebrew-formula.yml@main
+    with:
+      package-name: zarfs
+      binary-name: zarfs
+      formula-class: Zarfs
+      formula-desc: "Mount RISC OS archive files as filesystems (read-write for ArcFS)"
+      artifact-style: goreleaser
+      private: true
+    secrets:
+      deploy-key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
